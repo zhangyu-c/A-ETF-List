@@ -28,8 +28,20 @@
             line-height: 1.5;
         }
         .container { max-width: 100%; padding: 12px; }
-
-        /* 顶部统计 */
+        
+        .error-banner {
+            display: none;
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: #fff;
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        .error-banner.show { display: flex; }
+        
         .header {
             background: var(--bg-card);
             border-radius: 16px;
@@ -49,7 +61,38 @@
             font-size: 12px;
             color: var(--text-muted);
             margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
+        .refresh-btn {
+            background: var(--accent);
+            border: none;
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .refresh-btn:hover { opacity: 0.9; }
+        .refresh-btn.loading { opacity: 0.7; }
+        .refresh-btn .spinner {
+            display: none;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #fff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        .refresh-btn.loading .spinner { display: block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
         .stats {
             display: flex;
             gap: 24px;
@@ -68,7 +111,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* 分类标签 */
         .tabs {
             display: flex;
             gap: 8px;
@@ -107,7 +149,6 @@
         }
         .tab.active .tab-count { background: rgba(255,255,255,0.3); }
 
-        /* 分类内容区 */
         .category { display: none; }
         .category.show { display: block; }
         .category-header {
@@ -134,7 +175,6 @@
             font-weight: 600;
         }
 
-        /* 表格 */
         .table-wrap {
             background: var(--bg-card);
             border-radius: 12px;
@@ -150,7 +190,7 @@
             background: var(--bg-header);
         }
         th {
-            padding: 12px 10px;
+            padding: 12px 8px;
             text-align: left;
             font-weight: 600;
             color: var(--text-muted);
@@ -161,21 +201,20 @@
         }
         th.num, td.num { text-align: right; }
         td {
-            padding: 14px 10px;
+            padding: 14px 8px;
             border-bottom: 1px solid var(--border);
             vertical-align: middle;
         }
         tr:last-child td { border-bottom: none; }
         tr:hover td { background: rgba(88,166,255,0.05); }
 
-        /* 单元格样式 */
         .code {
             font-family: "SF Mono", Menlo, monospace;
             font-size: 13px;
             font-weight: 600;
         }
         .name {
-            max-width: 120px;
+            max-width: 100px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -193,23 +232,14 @@
             font-size: 11px;
             color: var(--yellow);
         }
-        .index-desc {
-            font-size: 11px;
-            color: var(--text-muted);
-            max-width: 80px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
 
-        /* 链接 */
         a.xueqiu {
-            color: var(--accent);
-            text-decoration: none;
+            color: #fff;
+            text-decoration: underline;
+            text-underline-offset: 2px;
         }
-        a.xueqiu:hover { text-decoration: underline; }
+        a.xueqiu:hover { color: var(--accent); }
 
-        /* 页脚 */
         .footer {
             text-align: center;
             padding: 24px;
@@ -217,7 +247,6 @@
             font-size: 11px;
         }
 
-        /* 移动端优化 */
         @media (max-width: 480px) {
             .container { padding: 8px; }
             .header { padding: 16px; border-radius: 12px; }
@@ -228,51 +257,54 @@
             .category-header { padding: 10px 12px; }
             .category-title { font-size: 14px; }
             table { font-size: 12px; }
-            th, td { padding: 10px 8px; }
-            .name { max-width: 90px; }
-            .index-desc { display: none; }
-        }
-
-        @media (max-width: 360px) {
-            .name { max-width: 70px; font-size: 11px; }
-            .code { font-size: 11px; }
-            th { font-size: 10px; }
+            th, td { padding: 10px 6px; }
+            .name { max-width: 80px; }
         }
     </style>
     <meta http-equiv="refresh" content="300">
 </head>
 <body>
     <div class="container">
+        <div class="error-banner" id="errorBanner">
+            <span>⚠️</span>
+            <span id="errorText">暂时无法更新，请稍后再试</span>
+        </div>
+
         <div class="header">
             <h1>A股场内ETF筛选看板</h1>
-            <div class="subtitle">规模≥1亿 | 同一指数保留最大规模ETF</div>
+            <div class="subtitle">
+                <span>规模≥1亿 | 同一指数保留最大规模ETF</span>
+                <button class="refresh-btn" id="refreshBtn" onclick="refreshData()">
+                    <span class="spinner"></span>
+                    <span class="btn-text">刷新数据</span>
+                </button>
+            </div>
             <div class="stats">
                 <div class="stat">
-                    <div class="stat-value">40</div>
+                    <div class="stat-value">39</div>
                     <div class="stat-label">ETF数量</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-value">4434亿</div>
-                    <div class="stat-label">总规模</div>
+                    <div class="stat-value">39只</div>
+                    <div class="stat-label">有数据</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-value">06/06</div>
+                    <div class="stat-value">04/15 16:51</div>
                     <div class="stat-label">更新时间</div>
                 </div>
             </div>
         </div>
 
         <div class="tabs">
-            <div class="tab active" data-cat="宽基">[B] 宽基<span class="tab-count">11</span></div>
-            <div class="tab" data-cat="红利">[D] 红利<span class="tab-count">5</span></div>
-            <div class="tab" data-cat="行业">[I] 行业<span class="tab-count">12</span></div>
-            <div class="tab" data-cat="Smart">[S] Smart<span class="tab-count">4</span></div>
-            <div class="tab" data-cat="港股">[HK] 港股<span class="tab-count">4</span></div>
-            <div class="tab" data-cat="全球">[G] 全球<span class="tab-count">4</span></div>
+            <div class="tab active" data-cat="宽基综合指数" onclick="switchTab('宽基综合指数')">[B] 宽基综合指数<span class="tab-count">11</span></div>
+            <div class="tab" data-cat="红利价值股息类" onclick="switchTab('红利价值股息类')">[D] 红利价值股息类<span class="tab-count">4</span></div>
+            <div class="tab" data-cat="行业板块指数类" onclick="switchTab('行业板块指数类')">[I] 行业板块指数类<span class="tab-count">12</span></div>
+            <div class="tab" data-cat="策略风格SmartBeta" onclick="switchTab('策略风格SmartBeta')">[S] 策略风格SmartBeta<span class="tab-count">4</span></div>
+            <div class="tab" data-cat="港股ETF" onclick="switchTab('港股ETF')">[HK] 港股ETF<span class="tab-count">4</span></div>
+            <div class="tab" data-cat="全球市场ETF" onclick="switchTab('全球市场ETF')">[G] 全球市场ETF<span class="tab-count">4</span></div>
         </div>
 
-        <!-- 宽基综合 -->
-        <div class="category show" id="cat_宽基">
+        <div class="category show" id="cat_宽基综合指数">
             <div class="category-header">
                 <span class="category-title">[B] 宽基综合指数</span>
                 <span class="category-count">11</span>
@@ -281,147 +313,545 @@
                 <table>
                     <thead><tr>
                         <th>代码</th><th>名称</th>
-                        <th class="num">规模</th>
+                        <th class="num">规模(亿)</th>
                         <th class="num">价格</th>
                         <th class="num">涨跌</th>
                         <th class="num">250均</th>
                         <th>指数</th>
                     </tr></thead>
                     <tbody>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH510300" target="_blank">510300</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH510300" target="_blank">华泰柏瑞沪深300ETF</a></td><td class="scale num">580亿</td><td class="price num">4.24</td><td class="up num">+0.85%</td><td class="ma-low num">-13%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH000300" target="_blank">000300</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH510500" target="_blank">510500</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH510500" target="_blank">南方中证500ETF</a></td><td class="scale num">420亿</td><td class="price num">6.89</td><td class="up num">+1.23%</td><td class="ma-flat num">+4%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH000500" target="_blank">000500</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159915" target="_blank">159915</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159915" target="_blank">易方达创业板ETF</a></td><td class="scale num">311亿</td><td class="price num">2.16</td><td class="down num">-0.45%</td><td class="ma-low num">-13%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ399006" target="_blank">399006</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH510050" target="_blank">510050</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH510050" target="_blank">华夏上证50ETF</a></td><td class="scale num">280亿</td><td class="price num">2.68</td><td class="up num">+0.32%</td><td class="ma-low num">-12%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH000016" target="_blank">000016</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH588000" target="_blank">588000</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH588000" target="_blank">华夏科创50ETF</a></td><td class="scale num">210亿</td><td class="price num">1.09</td><td class="up num">+2.15%</td><td class="ma-high num">+9%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH000688" target="_blank">000688</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159628" target="_blank">159628</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159628" target="_blank">华夏中证A500ETF</a></td><td class="scale num">95亿</td><td class="price num">5.23</td><td class="up num">+0.67%</td><td class="ma-low num">-8%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH931643" target="_blank">931643</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159812" target="_blank">159812</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159812" target="_blank">中证1000ETF</a></td><td class="scale num">89亿</td><td class="price num">2.46</td><td class="up num">+1.08%</td><td class="ma-flat num">+5%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ000852" target="_blank">000852</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159601" target="_blank">159601</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159601" target="_blank">MSCI中国A50ETF</a></td><td class="scale num">65亿</td><td class="price num">3.89</td><td class="up num">+0.95%</td><td class="ma-high num">+11%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH746059" target="_blank">746059</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159902" target="_blank">159902</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159902" target="_blank">华夏中小企业板ETF</a></td><td class="scale num">57亿</td><td class="price num">5.68</td><td class="up num">+0.45%</td><td class="ma-flat num">+2%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ399005" target="_blank">399005</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH510180" target="_blank">510180</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH510180" target="_blank">华安上证180ETF</a></td><td class="scale num">39亿</td><td class="price num">3.46</td><td class="up num">+0.12%</td><td class="ma-flat num">+1%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH000010" target="_blank">000010</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159905" target="_blank">159905</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159905" target="_blank">工银瑞信深证100ETF</a></td><td class="scale num">26亿</td><td class="price num">4.57</td><td class="up num">+0.21%</td><td class="ma-high num">+7%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ399330" target="_blank">399330</a></td></tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH510300" target="_blank">510300</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH510300" target="_blank">华泰柏瑞沪深300ETF</a></td>
+                            <td class="scale num">1250.52</td>
+                            <td class="price num">47.460</td>
+                            <td class="up num">+0.72%</td>
+                            <td class="ma-high num">+6.6%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH510300" target="_blank">000300</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH510500" target="_blank">510500</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH510500" target="_blank">南方中证500ETF</a></td>
+                            <td class="scale num">378.90</td>
+                            <td class="price num">82.350</td>
+                            <td class="up num">+0.89%</td>
+                            <td class="ma-high num">+16.6%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH510500" target="_blank">000500</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159915" target="_blank">159915</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159915" target="_blank">易方达创业板ETF</a></td>
+                            <td class="scale num">520.15</td>
+                            <td class="price num">35.950</td>
+                            <td class="up num">+1.21%</td>
+                            <td class="ma-high num">+29.0%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159915" target="_blank">399006</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH510050" target="_blank">510050</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH510050" target="_blank">华夏上证50ETF</a></td>
+                            <td class="scale num">680.25</td>
+                            <td class="price num">30.270</td>
+                            <td class="up num">+0.93%</td>
+                            <td class="ma-high num">+0.8%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH510050" target="_blank">000016</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH588000" target="_blank">588000</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH588000" target="_blank">华夏科创50ETF</a></td>
+                            <td class="scale num">450.80</td>
+                            <td class="price num">15.090</td>
+                            <td class="up num">+1.68%</td>
+                            <td class="ma-high num">+14.2%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH588000" target="_blank">000688</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159628" target="_blank">159628</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159628" target="_blank">华夏中证A500ETF</a></td>
+                            <td class="scale num">85.60</td>
+                            <td class="price num">14.520</td>
+                            <td class="up num">+0.55%</td>
+                            <td class="ma-high num">+14.6%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159628" target="_blank">931643</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159812" target="_blank">159812</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159812" target="_blank">中证1000ETF</a></td>
+                            <td class="scale num">120.35</td>
+                            <td class="price num">101.110</td>
+                            <td class="up num">+1.12%</td>
+                            <td class="ma-high num">+16.9%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159812" target="_blank">000852</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159601" target="_blank">159601</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159601" target="_blank">MSCI中国A50ETF</a></td>
+                            <td class="scale num">68.90</td>
+                            <td class="price num">10.990</td>
+                            <td class="up num">+0.37%</td>
+                            <td class="ma-high num">+13.0%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159601" target="_blank">746059</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159902" target="_blank">159902</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159902" target="_blank">华夏中小企业板ETF</a></td>
+                            <td class="scale num">45.20</td>
+                            <td class="price num">47.780</td>
+                            <td class="up num">+0.46%</td>
+                            <td class="ma-high num">+18.3%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159902" target="_blank">399005</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH510180" target="_blank">510180</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH510180" target="_blank">华安上证180ETF</a></td>
+                            <td class="scale num">35.80</td>
+                            <td class="price num">40.550</td>
+                            <td class="up num">+0.75%</td>
+                            <td class="ma-high num">+3.5%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH510180" target="_blank">000010</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159905" target="_blank">159905</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159905" target="_blank">工银瑞信深证红利ETF</a></td>
+                            <td class="scale num">8.50</td>
+                            <td class="price num">18.310</td>
+                            <td class="up num">+0.55%</td>
+                            <td class="ma-high num">+3.9%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159905" target="_blank">399324</a></td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- 红利价值 -->
-        <div class="category" id="cat_红利">
+        <div class="category show" id="cat_红利价值股息类">
             <div class="category-header">
                 <span class="category-title">[D] 红利价值股息类</span>
-                <span class="category-count">5</span>
+                <span class="category-count">4</span>
             </div>
             <div class="table-wrap">
                 <table>
-                    <thead><tr><th>代码</th><th>名称</th><th class="num">规模</th><th class="num">价格</th><th class="num">涨跌</th><th class="num">250均</th><th>指数</th></tr></thead>
+                    <thead><tr>
+                        <th>代码</th><th>名称</th>
+                        <th class="num">规模(亿)</th>
+                        <th class="num">价格</th>
+                        <th class="num">涨跌</th>
+                        <th class="num">250均</th>
+                        <th>指数</th>
+                    </tr></thead>
                     <tbody>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH512890" target="_blank">512890</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH512890" target="_blank">华泰柏瑞红利低波动ETF</a></td><td class="scale num">52亿</td><td class="price num">1.57</td><td class="up num">+0.12%</td><td class="ma-low num">-6%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH931446" target="_blank">931446</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH515180" target="_blank">515180</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH515180" target="_blank">博时中证红利ETF</a></td><td class="scale num">42亿</td><td class="price num">1.46</td><td class="up num">+0.23%</td><td class="ma-low num">-13%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH000922" target="_blank">000922</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH515080" target="_blank">515080</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH515080" target="_blank">招商中证红利ETF</a></td><td class="scale num">36亿</td><td class="price num">1.48</td><td class="up num">+0.18%</td><td class="ma-high num">+10%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH000922" target="_blank">000922</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159905" target="_blank">159905</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159905" target="_blank">工银瑞信深证红利ETF</a></td><td class="scale num">29亿</td><td class="price num">2.35</td><td class="up num">+0.45%</td><td class="ma-high num">+8%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ399324" target="_blank">399324</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH515100" target="_blank">515100</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH515100" target="_blank">景顺长城中证红利低波动100ETF</a></td><td class="scale num">18亿</td><td class="price num">1.52</td><td class="up num">+0.15%</td><td class="ma-flat num">+1%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH931446" target="_blank">931446</a></td></tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH512890" target="_blank">512890</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH512890" target="_blank">华泰柏瑞红利低波动ETF</a></td>
+                            <td class="scale num">42.30</td>
+                            <td class="price num">11.900</td>
+                            <td class="up num">+0.68%</td>
+                            <td class="ma-high num">+0.6%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH512890" target="_blank">931446</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH515180" target="_blank">515180</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH515180" target="_blank">博时中证红利ETF</a></td>
+                            <td class="scale num">28.60</td>
+                            <td class="price num">14.290</td>
+                            <td class="up num">+0.49%</td>
+                            <td class="ma-high num">+1.6%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH515180" target="_blank">000922</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH515080" target="_blank">515080</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH515080" target="_blank">招商中证红利ETF</a></td>
+                            <td class="scale num">22.15</td>
+                            <td class="price num">16.010</td>
+                            <td class="up num">+0.50%</td>
+                            <td class="ma-high num">+1.5%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH515080" target="_blank">000922</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH515100" target="_blank">515100</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH515100" target="_blank">景顺长城中证红利低波动100ETF</a></td>
+                            <td class="scale num">18.90</td>
+                            <td class="price num">14.490</td>
+                            <td class="up num">+0.84%</td>
+                            <td class="ma-low num">-4.0%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH515100" target="_blank">931446</a></td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- 行业板块 -->
-        <div class="category" id="cat_行业">
+        <div class="category show" id="cat_行业板块指数类">
             <div class="category-header">
                 <span class="category-title">[I] 行业板块指数类</span>
                 <span class="category-count">12</span>
             </div>
             <div class="table-wrap">
                 <table>
-                    <thead><tr><th>代码</th><th>名称</th><th class="num">规模</th><th class="num">价格</th><th class="num">涨跌</th><th class="num">250均</th><th>指数</th></tr></thead>
+                    <thead><tr>
+                        <th>代码</th><th>名称</th>
+                        <th class="num">规模(亿)</th>
+                        <th class="num">价格</th>
+                        <th class="num">涨跌</th>
+                        <th class="num">250均</th>
+                        <th>指数</th>
+                    </tr></thead>
                     <tbody>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH512880" target="_blank">512880</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH512880" target="_blank">国泰中证全指证券公司ETF</a></td><td class="scale num">320亿</td><td class="price num">1.12</td><td class="up num">+1.45%</td><td class="ma-flat num">+2%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ399975" target="_blank">399975</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH512010" target="_blank">512010</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH512010" target="_blank">易方达沪深300医药卫生ETF</a></td><td class="scale num">157亿</td><td class="price num">0.59</td><td class="down num">-0.78%</td><td class="ma-low num">-13%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ399933" target="_blank">399933</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH512690" target="_blank">512690</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH512690" target="_blank">鹏华中证酒ETF</a></td><td class="scale num">135亿</td><td class="price num">0.79</td><td class="down num">-0.45%</td><td class="ma-low num">-5%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ399997" target="_blank">399997</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159928" target="_blank">159928</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159928" target="_blank">汇添富中证主要消费ETF</a></td><td class="scale num">126亿</td><td class="price num">1.57</td><td class="up num">+0.34%</td><td class="ma-flat num">-4%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ000932" target="_blank">000932</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH512800" target="_blank">512800</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH512800" target="_blank">华宝中证银行ETF</a></td><td class="scale num">95亿</td><td class="price num">1.01</td><td class="up num">+0.56%</td><td class="ma-high num">+9%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ399986" target="_blank">399986</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH512760" target="_blank">512760</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH512760" target="_blank">国泰中证芯片产业ETF</a></td><td class="scale num">85亿</td><td class="price num">1.89</td><td class="up num">+3.25%</td><td class="ma-low num">-8%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH931084" target="_blank">931084</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH515050" target="_blank">515050</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH515050" target="_blank">华夏中证5G通信ETF</a></td><td class="scale num">79亿</td><td class="price num">1.23</td><td class="up num">+1.89%</td><td class="ma-low num">-8%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH931079" target="_blank">931079</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159992" target="_blank">159992</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159992" target="_blank">银华创新药ETF</a></td><td class="scale num">65亿</td><td class="price num">1.23</td><td class="up num">+2.15%</td><td class="ma-high num">+6%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH931456" target="_blank">931456</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH515980" target="_blank">515980</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH515980" target="_blank">华泰柏瑞中证光伏产业ETF</a></td><td class="scale num">62亿</td><td class="price num">1.46</td><td class="up num">+2.34%</td><td class="ma-flat num">+4%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH931798" target="_blank">931798</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159995" target="_blank">159995</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159995" target="_blank">华夏国证新能源汽车ETF</a></td><td class="scale num">56亿</td><td class="price num">1.68</td><td class="up num">+1.67%</td><td class="ma-high num">+7%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ399976" target="_blank">399976</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH515220" target="_blank">515220</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH515220" target="_blank">国泰中证煤炭ETF</a></td><td class="scale num">28亿</td><td class="price num">2.35</td><td class="up num">+1.23%</td><td class="ma-high num">+5%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ399998" target="_blank">399998</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159766" target="_blank">159766</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159766" target="_blank">富国中证旅游主题ETF</a></td><td class="scale num">19亿</td><td class="price num">1.09</td><td class="up num">+0.78%</td><td class="ma-flat num">-3%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH931021" target="_blank">931021</a></td></tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH512880" target="_blank">512880</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH512880" target="_blank">国泰中证全指证券公司ETF</a></td>
+                            <td class="scale num">285.40</td>
+                            <td class="price num">10.860</td>
+                            <td class="up num">+0.00%</td>
+                            <td class="ma-low num">-7.8%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH512880" target="_blank">399975</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH512010" target="_blank">512010</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH512010" target="_blank">易方达沪深300医药卫生ETF</a></td>
+                            <td class="scale num">120.50</td>
+                            <td class="price num">3.800</td>
+                            <td class="up num">+1.33%</td>
+                            <td class="ma-low num">-3.3%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH512010" target="_blank">399933</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH512690" target="_blank">512690</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH512690" target="_blank">鹏华中证酒ETF</a></td>
+                            <td class="scale num">98.75</td>
+                            <td class="price num">4.960</td>
+                            <td class="up num">+0.81%</td>
+                            <td class="ma-low num">-13.4%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH512690" target="_blank">399997</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159928" target="_blank">159928</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159928" target="_blank">汇添富中证主要消费ETF</a></td>
+                            <td class="scale num">110.30</td>
+                            <td class="price num">7.540</td>
+                            <td class="up num">+0.40%</td>
+                            <td class="ma-low num">-7.7%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159928" target="_blank">000932</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH512800" target="_blank">512800</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH512800" target="_blank">华宝中证银行ETF</a></td>
+                            <td class="scale num">65.80</td>
+                            <td class="price num">8.040</td>
+                            <td class="up num">+1.13%</td>
+                            <td class="ma-low num">-21.3%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH512800" target="_blank">399986</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH512760" target="_blank">512760</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH512760" target="_blank">国泰中证芯片产业ETF</a></td>
+                            <td class="scale num">45.20</td>
+                            <td class="price num">8.850</td>
+                            <td class="up num">+1.14%</td>
+                            <td class="ma-low num">-38.4%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH512760" target="_blank">931084</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH515050" target="_blank">515050</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH515050" target="_blank">华夏中证5G通信ETF</a></td>
+                            <td class="scale num">38.90</td>
+                            <td class="price num">27.750</td>
+                            <td class="up num">+0.33%</td>
+                            <td class="ma-high num">+51.7%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH515050" target="_blank">931079</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159992" target="_blank">159992</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159992" target="_blank">银华创新药ETF</a></td>
+                            <td class="scale num">32.50</td>
+                            <td class="price num">8.750</td>
+                            <td class="up num">+2.58%</td>
+                            <td class="ma-high num">+1.8%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159992" target="_blank">931456</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH515980" target="_blank">515980</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH515980" target="_blank">华泰柏瑞中证光伏产业ETF</a></td>
+                            <td class="scale num">28.60</td>
+                            <td class="price num">9.640</td>
+                            <td class="up num">+0.52%</td>
+                            <td class="ma-low num">-7.6%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH515980" target="_blank">931798</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159995" target="_blank">159995</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159995" target="_blank">华夏国证新能源汽车ETF</a></td>
+                            <td class="scale num">25.80</td>
+                            <td class="price num">18.570</td>
+                            <td class="up num">+1.25%</td>
+                            <td class="ma-high num">+17.2%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159995" target="_blank">399976</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH515220" target="_blank">515220</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH515220" target="_blank">国泰中证煤炭ETF</a></td>
+                            <td class="scale num">18.40</td>
+                            <td class="price num">11.990</td>
+                            <td class="down num">-0.25%</td>
+                            <td class="ma-high num">+8.5%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH515220" target="_blank">399998</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159766" target="_blank">159766</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159766" target="_blank">富国中证旅游主题ETF</a></td>
+                            <td class="scale num">15.20</td>
+                            <td class="price num">6.870</td>
+                            <td class="up num">+0.00%</td>
+                            <td class="ma-low num">-5.9%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159766" target="_blank">931021</a></td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- SmartBeta -->
-        <div class="category" id="cat_Smart">
+        <div class="category show" id="cat_策略风格SmartBeta">
             <div class="category-header">
                 <span class="category-title">[S] 策略风格SmartBeta</span>
                 <span class="category-count">4</span>
             </div>
             <div class="table-wrap">
                 <table>
-                    <thead><tr><th>代码</th><th>名称</th><th class="num">规模</th><th class="num">价格</th><th class="num">涨跌</th><th class="num">250均</th><th>指数</th></tr></thead>
+                    <thead><tr>
+                        <th>代码</th><th>名称</th>
+                        <th class="num">规模(亿)</th>
+                        <th class="num">价格</th>
+                        <th class="num">涨跌</th>
+                        <th class="num">250均</th>
+                        <th>指数</th>
+                    </tr></thead>
                     <tbody>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH516110" target="_blank">516110</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH516110" target="_blank">易方达中证内地低碳经济ETF</a></td><td class="scale num">36亿</td><td class="price num">1.57</td><td class="up num">+1.34%</td><td class="ma-high num">+5%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ000977" target="_blank">000977</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH515030" target="_blank">515030</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH515030" target="_blank">华泰柏瑞中证智能电动汽车ETF</a></td><td class="scale num">26亿</td><td class="price num">1.23</td><td class="up num">+1.89%</td><td class="ma-flat num">+4%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH931721" target="_blank">931721</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159825" target="_blank">159825</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159825" target="_blank">东方红中证东方红优势指数</a></td><td class="scale num">13亿</td><td class="price num">2.35</td><td class="up num">+0.23%</td><td class="ma-high num">+5%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH931786" target="_blank">931786</a></td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH516000" target="_blank">516000</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH516000" target="_blank">华宝中证150债券ETF</a></td><td class="scale num">8亿</td><td class="price num">1.23</td><td class="up num">+0.08%</td><td class="ma-low num">-5%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH930897" target="_blank">930897</a></td></tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH516110" target="_blank">516110</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH516110" target="_blank">易方达中证内地低碳经济ETF</a></td>
+                            <td class="scale num">12.80</td>
+                            <td class="price num">13.410</td>
+                            <td class="up num">+0.75%</td>
+                            <td class="ma-low num">-2.1%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH516110" target="_blank">000977</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH515030" target="_blank">515030</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH515030" target="_blank">华泰柏瑞中证智能电动汽车ETF</a></td>
+                            <td class="scale num">35.60</td>
+                            <td class="price num">20.160</td>
+                            <td class="up num">+0.50%</td>
+                            <td class="ma-high num">+24.9%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH515030" target="_blank">931721</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159825" target="_blank">159825</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159825" target="_blank">东方红中证东方红优势指数</a></td>
+                            <td class="scale num">8.90</td>
+                            <td class="price num">8.590</td>
+                            <td class="up num">+0.12%</td>
+                            <td class="ma-high num">+8.2%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159825" target="_blank">931786</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH516000" target="_blank">516000</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH516000" target="_blank">华夏中证装备产业ETF</a></td>
+                            <td class="scale num">6.50</td>
+                            <td class="price num">11.000</td>
+                            <td class="up num">+0.55%</td>
+                            <td class="ma-high num">+5.9%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH516000" target="_blank">930897</a></td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- 港股ETF -->
-        <div class="category" id="cat_港股">
+        <div class="category show" id="cat_港股ETF">
             <div class="category-header">
                 <span class="category-title">[HK] 港股ETF</span>
                 <span class="category-count">4</span>
             </div>
             <div class="table-wrap">
                 <table>
-                    <thead><tr><th>代码</th><th>名称</th><th class="num">规模</th><th class="num">价格</th><th class="num">涨跌</th><th class="num">250均</th><th>指数</th></tr></thead>
+                    <thead><tr>
+                        <th>代码</th><th>名称</th>
+                        <th class="num">规模(亿)</th>
+                        <th class="num">价格</th>
+                        <th class="num">涨跌</th>
+                        <th class="num">250均</th>
+                        <th>指数</th>
+                    </tr></thead>
                     <tbody>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159920" target="_blank">159920</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159920" target="_blank">华夏恒生ETF</a></td><td class="scale num">165亿</td><td class="price num">1.68</td><td class="up num">+1.23%</td><td class="ma-flat num">-3%</td><td class="index-code">HSI</td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH513180" target="_blank">513180</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH513180" target="_blank">华夏恒生科技ETF</a></td><td class="scale num">95亿</td><td class="price num">0.46</td><td class="up num">+2.89%</td><td class="ma-high num">+14%</td><td class="index-code">HSTECH</td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH513060" target="_blank">513060</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH513060" target="_blank">华夏恒生医药ETF</a></td><td class="scale num">52亿</td><td class="price num">0.57</td><td class="up num">+1.56%</td><td class="ma-low num">-10%</td><td class="index-code">HSHEALTH</td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH516950" target="_blank">516950</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH516950" target="_blank">华宝中证港股通互联网ETF</a></td><td class="scale num">36亿</td><td class="price num">0.88</td><td class="up num">+2.45%</td><td class="ma-low num">-7%</td><td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH931637" target="_blank">931637</a></td></tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159920" target="_blank">159920</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159920" target="_blank">华夏恒生ETF</a></td>
+                            <td class="scale num">85.60</td>
+                            <td class="price num">15.470</td>
+                            <td class="up num">+0.78%</td>
+                            <td class="ma-high num">+0.2%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159920" target="_blank">HSI</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH513180" target="_blank">513180</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH513180" target="_blank">华夏恒生科技ETF</a></td>
+                            <td class="scale num">68.40</td>
+                            <td class="price num">6.360</td>
+                            <td class="up num">+1.27%</td>
+                            <td class="ma-low num">-14.1%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH513180" target="_blank">HSTECH</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH513060" target="_blank">513060</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH513060" target="_blank">华夏恒生医药ETF</a></td>
+                            <td class="scale num">45.20</td>
+                            <td class="price num">6.170</td>
+                            <td class="up num">+3.18%</td>
+                            <td class="ma-low num">-0.8%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH513060" target="_blank">HSHEALTH</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH516950" target="_blank">516950</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH516950" target="_blank">华宝中证港股通互联网ETF</a></td>
+                            <td class="scale num">32.80</td>
+                            <td class="price num">11.690</td>
+                            <td class="up num">+1.12%</td>
+                            <td class="ma-high num">+2.4%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH516950" target="_blank">931637</a></td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- 全球市场 -->
-        <div class="category" id="cat_全球">
+        <div class="category show" id="cat_全球市场ETF">
             <div class="category-header">
                 <span class="category-title">[G] 全球市场ETF</span>
                 <span class="category-count">4</span>
             </div>
             <div class="table-wrap">
                 <table>
-                    <thead><tr><th>代码</th><th>名称</th><th class="num">规模</th><th class="num">价格</th><th class="num">涨跌</th><th class="num">250均</th><th>指数</th></tr></thead>
+                    <thead><tr>
+                        <th>代码</th><th>名称</th>
+                        <th class="num">规模(亿)</th>
+                        <th class="num">价格</th>
+                        <th class="num">涨跌</th>
+                        <th class="num">250均</th>
+                        <th>指数</th>
+                    </tr></thead>
                     <tbody>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH518880" target="_blank">518880</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH518880" target="_blank">华安黄金ETF</a></td><td class="scale num">185亿</td><td class="price num">5.68</td><td class="up num">+0.12%</td><td class="ma-low num">-12%</td><td class="index-code">XAUUSD</td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH513130" target="_blank">513130</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH513130" target="_blank">华夏纳斯达克100ETF</a></td><td class="scale num">126亿</td><td class="price num">2.35</td><td class="up num">+0.89%</td><td class="ma-high num">+13%</td><td class="index-code">NDX100</td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH513500" target="_blank">513500</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH513500" target="_blank">博时标普500ETF</a></td><td class="scale num">85亿</td><td class="price num">1.23</td><td class="up num">+0.45%</td><td class="ma-low num">-15%</td><td class="index-code">SPX500</td></tr>
-                        <tr><td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159981" target="_blank">159981</a></td><td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159981" target="_blank">易方达原油ETF</a></td><td class="scale num">28亿</td><td class="price num">1.23</td><td class="down num">-1.23%</td><td class="ma-high num">+10%</td><td class="index-code">USOIL</td></tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH518880" target="_blank">518880</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH518880" target="_blank">华安黄金ETF</a></td>
+                            <td class="scale num">180.50</td>
+                            <td class="price num">101.500</td>
+                            <td class="up num">+1.38%</td>
+                            <td class="ma-high num">+17.0%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH518880" target="_blank">XAUUSD</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH513130" target="_blank">513130</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH513130" target="_blank">华夏纳斯达克100ETF</a></td>
+                            <td class="scale num">65.80</td>
+                            <td class="price num">6.250</td>
+                            <td class="up num">+1.46%</td>
+                            <td class="ma-low num">-14.1%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH513130" target="_blank">NDX100</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SH513500" target="_blank">513500</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SH513500" target="_blank">博时标普500ETF</a></td>
+                            <td class="scale num">48.60</td>
+                            <td class="price num">23.520</td>
+                            <td class="up num">+1.42%</td>
+                            <td class="ma-high num">+5.1%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SH513500" target="_blank">SPX500</a></td>
+                        </tr>
+                        <tr>
+                            <td class="code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159981" target="_blank">159981</a></td>
+                            <td class="name"><a class="xueqiu" href="https://xueqiu.com/S/SZ159981" target="_blank">易方达原油ETF</a></td>
+                            <td class="scale num">12.30</td>
+                            <td class="price num">16.500</td>
+                            <td class="up num">+1.16%</td>
+                            <td class="ma-high num">+23.0%</td>
+                            <td class="index-code"><a class="xueqiu" href="https://xueqiu.com/S/SZ159981" target="_blank">USOIL</a></td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
         <div class="footer">
-            <p>数据来源: AKShare | 每5分钟自动刷新</p>
+            <p>数据来源: 通达信离线数据 | 每5分钟自动刷新</p>
+            <p>⚠️ 注意：数据为前一交易日，非实时行情</p>
         </div>
     </div>
 
     <script>
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                const cat = tab.dataset.cat;
-                document.querySelectorAll('.category').forEach(c => c.classList.remove('show'));
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                document.getElementById('cat_' + cat).classList.add('show');
-                tab.classList.add('active');
-            });
+        function switchTab(catName) {
+            document.querySelectorAll('.category').forEach(c => c.classList.remove('show'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('cat_' + catName).classList.add('show');
+            document.querySelector('.tab[data-cat="' + catName + '"]').classList.add('active');
+        }
+        
+        let retryCount = 0;
+        let isRefreshing = false;
+        const MAX_RETRIES = 5;
+        
+        function updateRefreshButton(loading) {
+            const btn = document.getElementById('refreshBtn');
+            if (loading) {
+                btn.classList.add('loading');
+                btn.disabled = true;
+                btn.querySelector('.btn-text').textContent = '刷新中...';
+            } else {
+                btn.classList.remove('loading');
+                btn.disabled = false;
+                btn.querySelector('.btn-text').textContent = '刷新数据';
+            }
+        }
+        
+        function showError(show, message) {
+            const banner = document.getElementById('errorBanner');
+            const text = document.getElementById('errorText');
+            if (show) {
+                text.textContent = message || '暂时无法更新，请稍后再试';
+                banner.classList.add('show');
+            } else {
+                banner.classList.remove('show');
+            }
+        }
+        
+        async function refreshData() {
+            if (isRefreshing) return;
+            isRefreshing = true;
+            updateRefreshButton(true);
+            showError(false);
+            
+            try {
+                await new Promise(r => setTimeout(r, 1000));
+                location.reload();
+            } catch (e) {
+                retryCount++;
+                if (retryCount >= MAX_RETRIES) {
+                    showError(true, '暂时无法更新，请稍后再试');
+                } else {
+                    showError(true, `数据获取失败 (${retryCount}/${MAX_RETRIES})，正在重试...`);
+                }
+            } finally {
+                isRefreshing = false;
+                updateRefreshButton(false);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.category').forEach(c => c.classList.remove('show'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            const firstCat = document.querySelector('.category');
+            const firstTab = document.querySelector('.tab');
+            if (firstCat) firstCat.classList.add('show');
+            if (firstTab) firstTab.classList.add('active');
         });
     </script>
 </body>
